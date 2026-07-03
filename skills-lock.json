@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "skills": {
+    "bubbletea-code-review": {
+      "source": "existential-birds/beagle",
+      "sourceType": "github",
+      "skillPath": "plugins/beagle-go/skills/bubbletea-code-review/SKILL.md",
+      "computedHash": "abe83c4e92519eeba9e84db3fac8acc83eee96a2da1bab1eeb36534dcd06149a"
+    }
+  }
+}
