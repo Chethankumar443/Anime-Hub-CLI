@@ -3,6 +3,7 @@ package provider
 import (
 	"errors"
 	"log"
+	"time"
 )
 
 type Anime struct {
@@ -13,6 +14,17 @@ type Anime struct {
 type Episode struct {
 	ID     string
 	Number int
+}
+
+// PlaybackProgress tracks elapsed play states.
+type PlaybackProgress struct {
+	AnimeID     string    `json:"anime_id"`
+	EpisodeID   string    `json:"episode_id"`
+	EpisodeNum  int       `json:"episode_num"`
+	ElapsedSec  int       `json:"elapsed_sec"`
+	DurationSec int       `json:"duration_sec"`
+	LastUpdated time.Time `json:"last_updated"`
+	Completed   bool      `json:"completed"`
 }
 
 // AnimeProvider abstracts individual content scraper implementations.

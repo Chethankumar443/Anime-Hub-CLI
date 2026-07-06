@@ -144,7 +144,7 @@ func AddToWatchlist(anime provider.Anime) error {
 	defer historyLock.Unlock()
 
 	for _, item := range hist.Watchlist {
-		if item.ID == anime.ID && item.ProviderID == anime.ProviderID {
+		if item.ID == anime.ID {
 			return nil // Already in watchlist
 		}
 	}
