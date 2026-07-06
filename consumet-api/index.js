@@ -1,3 +1,7 @@
+if (typeof global.File === 'undefined') {
+  global.File = require('buffer').File;
+}
+
 const express = require('express');
 const { ANIME, META } = require('@consumet/extensions');
 

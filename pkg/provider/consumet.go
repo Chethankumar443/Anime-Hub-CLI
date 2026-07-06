@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -145,6 +146,38 @@ func (cm *ConsumetManager) Start() error {
 		// Port is free, start the binary here
 		cm.port = currentPort
 
+		// Check if we are in the development workspace and can run via node
+		runWithNode := false
+		nodePath, nodeErr := exec.LookPath("node")
+		wd, _ := os.Getwd()
+		devIndexJS := filepath.Join(wd, "consumet-api", "index.js")
+		if nodeErr == nil {
+			if _, err := os.Stat(devIndexJS); err == nil {
+				runWithNode = true
+			}
+		}
+
+		if runWithNode {
+			cm.cmd = exec.Command(nodePath, "index.js")
+			cm.cmd.Dir = filepath.Join(wd, "consumet-api")
+			cm.cmd.Env = append(os.Environ(), "PORT="+cm.port)
+
+			if runtime.GOOS == "windows" {
+				cm.cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+			}
+
+			if err := cm.cmd.Start(); err != nil {
+				log.Printf("Failed to start Consumet using Node.js fallback: %v. Trying binary instead...", err)
+			} else {
+				err = cm.waitForReady()
+				if err == nil {
+					return nil
+				}
+				log.Printf("Consumet started via Node.js but failed health check: %v. Trying binary instead...", err)
+				cm.Stop()
+			}
+		}
+
 		if _, err := os.Stat(cm.pathToConsumetBinary); os.IsNotExist(err) {
 			if downloadErr := cm.ensureConsumetBinary(); downloadErr != nil {
 				return fmt.Errorf("consumet binary not found and download failed: %w", downloadErr)
@@ -159,10 +192,14 @@ func (cm *ConsumetManager) Start() error {
 		}
 
 		if err := cm.cmd.Start(); err != nil {
-			return fmt.Errorf("initialization failure on provider binary: %w", err)
+			return fmt.Errorf("initialization failure on provider binary: %w (Note: Windows Defender may have blocked/quarantined the file)", err)
 		}
 
-		return cm.waitForReady()
+		err = cm.waitForReady()
+		if err != nil {
+			return fmt.Errorf("timeout waiting for child service: %w (Note: Windows Defender may have blocked/quarantined the file)", err)
+		}
+		return nil
 	}
 
 	return fmt.Errorf("failed to find an available port to start Consumet (tried ports %d to %d)", portInt, portInt+9)
