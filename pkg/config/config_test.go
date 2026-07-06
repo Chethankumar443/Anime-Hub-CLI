@@ -36,10 +36,8 @@ func TestLoadSaveConfigRecovery(t *testing.T) {
 
 	path := filepath.Join(tmpDir, "config.json")
 
-	// Test saveConfigLocked directly
-	err = saveConfigLocked(cfg)
-	// Wait, saveConfigLocked writes to GetConfigPath(). Since GetConfigPath() points to the real config,
-	// let's write a file write and decode test directly.
+	// Test saveConfigLocked directly is bypassed here because GetConfigPath() points to the real config directory.
+	// We test JSON serialization directly below.
 
 	// Let's test the JSON serialization directly to be environment-independent
 	tmpFile, err := os.Create(path)

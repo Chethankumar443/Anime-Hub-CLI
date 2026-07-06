@@ -17,7 +17,7 @@ func init() {
 		mux := http.NewServeMux()
 		mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
-			w.Write([]byte(`{"message": "Welcome to Consumet API!"}`))
+			_, _ = w.Write([]byte(`{"message": "Welcome to Consumet API!"}`))
 		})
 		err := http.ListenAndServe(":"+port, mux)
 		if err != nil {
@@ -32,13 +32,13 @@ func TestConsumetManager_ZombieProcessReuse(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		w.Write([]byte(`{"message": "Welcome to Consumet API!"}`))
+		_, _ = w.Write([]byte(`{"message": "Welcome to Consumet API!"}`))
 	})
 	server := &http.Server{Addr: ":13000", Handler: mux}
 	go func() {
 		_ = server.ListenAndServe()
 	}()
-	defer server.Shutdown(context.Background())
+	defer func() { _ = server.Shutdown(context.Background()) }()
 
 	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
@@ -61,13 +61,13 @@ func TestConsumetManager_PortConflictFallback(t *testing.T) {
 	// Start a dummy non-Consumet server on port 14000
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("unrelated dummy service"))
+		_, _ = w.Write([]byte("unrelated dummy service"))
 	})
 	server := &http.Server{Addr: ":14000", Handler: mux}
 	go func() {
 		_ = server.ListenAndServe()
 	}()
-	defer server.Shutdown(context.Background())
+	defer func() { _ = server.Shutdown(context.Background()) }()
 
 	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
@@ -103,13 +103,13 @@ func TestConsumetManager_EnsureConsumetBinary(t *testing.T) {
 	// Start mock HTTP server
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte("mock binary content"))
+		_, _ = w.Write([]byte("mock binary content"))
 	})
 	server := &http.Server{Addr: ":15000", Handler: mux}
 	go func() {
 		_ = server.ListenAndServe()
 	}()
-	defer server.Shutdown(context.Background())
+	defer func() { _ = server.Shutdown(context.Background()) }()
 
 	// Wait for server to start
 	time.Sleep(100 * time.Millisecond)
