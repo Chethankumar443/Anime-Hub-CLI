@@ -4,12 +4,10 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"runtime"
-	"strings"
 
 	"animehub/pkg/provider"
 	"animehub/pkg/tui"
@@ -24,8 +22,6 @@ var (
 )
 
 var lookPath = exec.LookPath
-var execCommand = exec.Command
-var stdIn io.Reader = os.Stdin
 var resolvedMPVPath = "mpv"
 
 var fileExists = func(path string) bool {
@@ -83,61 +79,6 @@ func checkDependencies() error {
 	return errors.New(style.Render(errorMessage))
 }
 
-func promptAndInstallMPV() error {
-	fmt.Print("Dependency 'mpv' is missing. Would you like to automatically install it? (y/n): ")
-	var response string
-	_, err := fmt.Fscanln(stdIn, &response)
-	if err != nil {
-		return fmt.Errorf("failed to read input: %w", err)
-	}
-
-	response = strings.TrimSpace(strings.ToLower(response))
-	if response != "y" && response != "yes" {
-		return errors.New("installation aborted by user")
-	}
-
-	var cmd *exec.Cmd
-	switch runtime.GOOS {
-	case "windows":
-		fmt.Println("Installing mpv via winget...")
-		cmd = execCommand("winget", "install", "shinchiro.mpv")
-	case "darwin":
-		fmt.Println("Installing mpv via Homebrew...")
-		cmd = execCommand("brew", "install", "mpv")
-	case "linux":
-		if _, err := exec.LookPath("apt-get"); err == nil {
-			fmt.Println("Installing mpv via apt...")
-			updateCmd := execCommand("sudo", "apt-get", "update")
-			updateCmd.Stdout = os.Stdout
-			updateCmd.Stderr = os.Stderr
-			updateCmd.Stdin = os.Stdin
-			_ = updateCmd.Run()
-			cmd = execCommand("sudo", "apt-get", "install", "-y", "mpv")
-		} else if _, err := exec.LookPath("pacman"); err == nil {
-			fmt.Println("Installing mpv via pacman...")
-			cmd = execCommand("sudo", "pacman", "-S", "--noconfirm", "mpv")
-		} else if _, err := exec.LookPath("dnf"); err == nil {
-			fmt.Println("Installing mpv via dnf...")
-			cmd = execCommand("sudo", "dnf", "install", "-y", "mpv")
-		} else {
-			return errors.New("no supported package manager found. Please install mpv manually")
-		}
-	default:
-		return errors.New("unsupported operating system for auto-install")
-	}
-
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("installation failed: %w", err)
-	}
-
-	fmt.Println("mpv installed successfully!")
-	return nil
-}
-
 func main() {
 	versionFlag := flag.Bool("version", false, "Print application version information")
 	flag.Parse()
@@ -150,16 +91,7 @@ func main() {
 	// Check mpv dependency first
 	if err := checkDependencies(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
-		fmt.Println()
-		if installErr := promptAndInstallMPV(); installErr != nil {
-			fmt.Fprintf(os.Stderr, "\nAuto-installation failed: %v\n", installErr)
-			os.Exit(1)
-		}
-		// Verification check
-		if err := checkDependencies(); err != nil {
-			fmt.Fprintf(os.Stderr, "\nVerification failed after install: %v\n", err)
-			os.Exit(1)
-		}
+		os.Exit(1)
 	}
 
 	// 1. Initialize Consumet Manager (Embedded Node Binary)
