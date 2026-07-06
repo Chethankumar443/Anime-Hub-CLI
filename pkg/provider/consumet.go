@@ -169,7 +169,7 @@ func (cm *ConsumetManager) Start() error {
 }
 
 func (cm *ConsumetManager) waitForReady() error {
-	url := fmt.Sprintf("http://localhost:%s/", cm.port)
+	url := fmt.Sprintf("http://127.0.0.1:%s/", cm.port)
 	for i := 0; i < 30; i++ {
 		resp, err := http.Get(url)
 		if err == nil && (resp.StatusCode == 200 || resp.StatusCode == 404) {
@@ -193,7 +193,7 @@ func (cm *ConsumetManager) isPortInUse(port string) bool {
 
 func (cm *ConsumetManager) isConsumetRunning(port string) bool {
 	client := &http.Client{Timeout: 500 * time.Millisecond}
-	resp, err := client.Get("http://localhost:" + port + "/")
+	resp, err := client.Get("http://127.0.0.1:" + port + "/")
 	if err != nil {
 		return false
 	}
@@ -222,7 +222,7 @@ type ConsumetProvider struct {
 func NewConsumetProvider(port string) *ConsumetProvider {
 	return &ConsumetProvider{
 		client:  resty.New(),
-		baseURL: fmt.Sprintf("http://localhost:%s", port),
+		baseURL: fmt.Sprintf("http://127.0.0.1:%s", port),
 	}
 }
 

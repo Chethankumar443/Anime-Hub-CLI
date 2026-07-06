@@ -116,7 +116,7 @@ func TestConsumetManager_EnsureConsumetBinary(t *testing.T) {
 
 	// Point downloadURLBase to our mock server
 	oldDownloadURLBase := downloadURLBase
-	downloadURLBase = "http://localhost:15000"
+	downloadURLBase = "http://127.0.0.1:15000"
 	defer func() { downloadURLBase = oldDownloadURLBase }()
 
 	// Create manager with path inside temp dir
