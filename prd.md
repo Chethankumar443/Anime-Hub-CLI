@@ -1,14 +1,44 @@
-**V1: The Functional Prototype (Weeks 1-2)**
-*   **Goal:** Prove the terminal state machine and `mpv` handoff work.
-*   **Scope:** Text-only UI. Single metadata API (AniList). Single video provider (Consumet). Basic Sub/Dub toggle. Local JSON watch history.
-*   **Success Metric:** A user can search "One Piece", select episode 1, and watch it in `mpv` without the terminal breaking.
+### Product Vision
 
-**V2: The Resilient Product (Weeks 3-4)**
-*   **Goal:** Eliminate single points of failure.
-*   **Scope:** Multi-provider fallback routing. Stream URL auto-refresh. Terminal image support (Kitty/Sixel) for cover art. 
-*   **Success Metric:** If the primary video provider goes down, the user experiences zero downtime; the tool silently switches to the backup provider.
+A blazing-fast, terminal-based anime hub built in Go that allows users to search, select, and stream content directly from their command line, completely bypassing the web browser. The tool focuses on extreme stability, elegant terminal UI presentation, and seamless handoffs to native system players.
 
-**V3: The Ecosystem Tool (Weeks 5-6)**
-*   **Goal:** Deep integration with the user's anime tracking.
-*   **Scope:** AniList OAuth2 integration to auto-mark episodes as watched. Auto-updater binary replacement. 
-*   **Success Metric:** The tool acts as a complete frontend for the user's AniList account.
+### Core Philosophy
+
+Do not build advanced features until the core loop (**Search $\rightarrow$ Select $\rightarrow$ Play**) is bulletproof. The product must prioritize resilience against fragile upstream data sources over feature bloat.
+
+### Scope & Boundaries
+
+* **In Scope:**
+* Interactive text-based Terminal User Interface (TUI).
+* Smart provider routing with transparent failover behavior.
+* Sub/Dub and language profile toggling.
+* Native video playback handoff via external utilities.
+* Local stream session tracking and history storage.
+
+
+* **Out of Scope:**
+* In-terminal raw video frame rendering (poor user experience and low frame rates).
+* Local video file downloading or persistent block storage management.
+* Centralized user account creation (the system remains completely local-first).
+
+
+
+### Version Roadmap
+
+#### Version 1 (The Working Prototype)
+
+* **Goal:** Establish a robust core application loop.
+* **Scope:** Text-only TUI, single metadata provider, manual sub/dub toggle, direct handoff to media player, and local JSON tracking.
+* **Engineering Focus:** Validate terminal state management and process handoffs before introducing ecosystem complexity.
+
+#### Version 2 (The Resilient Tool)
+
+* **Goal:** Provide an uninterrupted user experience when external providers fail.
+* **Scope:** Multi-provider fallback routing, automatic background URL token refreshing, and advanced terminal graphics protocol support (Kitty/Sixel) for cover art layouts.
+* **Engineering Focus:** Shield the user from stream URL expirations and upstream maintenance outages.
+
+#### Version 3 (The Power User Tool)
+
+* **Goal:** Serve as a total desktop web browser replacement.
+* **Scope:** Two-way tracking platform synchronization (AniList OAuth2 mutations), custom layout keybindings, and automated picture-in-picture workspace orchestration.
+* **Engineering Focus:** Handle external authentication state and complex asynchronous API integrations.
