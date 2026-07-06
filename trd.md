@@ -1,30 +1,12 @@
-### Language & Runtime Environment
+**Hard Constraints (What will break if you ignore them):**
+1.  **Stream URL Expiration:** Free provider APIs generate video URLs that expire in 15 to 60 minutes. *Rule:* Never fetch the video URL when the app starts. Fetch it *milliseconds* before launching `mpv`.
+2.  **API Rate Limiting:** AniList limits to 90 requests per minute. *Rule:* Implement exponential backoff and request caching in your Go HTTP client.
+3.  **Terminal State Corruption:** When `mpv` runs, it takes over the terminal. *Rule:* You must use Bubbletea's `tea.ExecProcess`, not standard `os/exec`, to properly suspend and resume the TUI.
 
-* **Core:** Go 1.21+ (leveraging structured concurrency primitives and optimized standard library HTTP implementations).
-
-### Core Dependencies
-
-* `github.com/charmbracelet/bubbletea`: Declarative TUI framework based on the Elm Architecture.
-* `github.com/charmbracelet/lipgloss`: Layout engine and terminal styling primitives.
-* `github.com/go-resty/resty/v2`: Resilient HTTP client featuring built-in retries.
-* `github.com/adrg/xdg`: Cross-platform compliance for standard user configurations.
-
-### External APIs & Data Infrastructure
-
-* **Metadata Layer:** AniList GraphQL API (`https://graphql.anilist.co`). Selected over Jikan for increased rate limits, speed, and standard structural mutations without mandatory API keys.
-* **Source Aggregation Layer:** Consumet API instance. Handles complex JavaScript-based scraping, decryption routines, and source extraction into unified JSON formats.
-* **Playback Core:** `mpv` Media Player. Chosen for out-of-the-box adaptive HLS/DASH streaming capabilities. Must be installed on the host platform and exposed via the system `$PATH`.
-
-### Critical Performance Targets
-
-* **Cold Boot Execution:** < 200ms to interactive TUI view state.
-* **Data Aggregation Latency:** < 2 seconds for a standard indexed text query.
-* **Runtime Memory Allocation:** < 50MB during idle state-machine execution.
-
-### Hard Engineering Traps & Constraints
-
-| Trap | Engineering Risk | Technical Mitigation Rule |
-| --- | --- | --- |
-| **Stream Token Expiration** | Video links expire within 15–60 minutes. Pre-fetching causes playback to fail mid-session. | **Never pre-fetch.** Resolve the final stream address *milliseconds* before spawning the player process. |
-| **Upstream Rate Limiting** | AniList enforces a 90 requests/min ceiling. Jikan restricts to 3 requests/sec. | Implement internal request caching and exponential backoff wrappers inside the HTTP transport client. |
-| **Terminal State Corruption** | Subprocesses hijacking `stdout` can break the terminal's alternative buffer screen state. | Suspend the parent Go TUI loop using explicit window-switching process boundaries during player handoff. |
+**The 6 Mandatory Security Patches:**
+1.  **Supply Chain Security:** Integrate `Dependabot` in GitHub Actions to auto-update vulnerable Go modules.
+2.  **Execution Safety:** Never pass user input directly into `exec.Command` via a shell. Always pass arguments as an array to prevent shell injection.
+3.  **Data at Rest:** Set local config/SQLite file permissions to `0600` (owner read/write only) to protect OAuth tokens and history.
+4.  **Network Security:** Enforce TLS 1.2+ and verify certificates in the `resty` HTTP client to prevent MitM attacks on public Wi-Fi.
+5.  **Update Integrity:** In the V3 auto-updater, verify the SHA256 checksum of the downloaded binary against the GitHub release `checksums.txt` before executing it.
+6.  **Input Validation:** Strip control characters and limit search queries to 100 characters to prevent DoS on free APIs.

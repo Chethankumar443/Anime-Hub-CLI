@@ -1,68 +1,34 @@
-### Phase 1: Barebones Skeleton & API Foundations (Days 1–3)
+**Phase 1: V1 Implementation (Days 1-10)**
+1.  `go mod init animehub`. Install Bubbletea, Lipgloss, Resty.
+2.  Compile Consumet to standalone binaries using `pkg`.
+3.  Implement `ConsumetManager` to download (if missing), start, and poll the embedded binary.
+4.  Build the 3-state Bubbletea TUI (Search -> Results -> Episodes).
+5.  Implement `tea.ExecProcess` for `mpv` handoff.
 
-* Initialize modules (`go mod init animehub`). Load basic runtime UI frameworks (`bubbletea`, `lipgloss`).
-* Establish data models matching the AniList GraphQL layout schema.
-* Assemble standard HTTP GET routing profiles pointing to the provider engine framework.
+**Phase 2: V2 Implementation (Days 11-20)**
+1.  Abstract providers into the `FallbackManager` interface.
+2.  Migrate local JSON history to SQLite (`glebarez/sqlite`).
+3.  Implement terminal image rendering (Kitty/Sixel) for cover art.
 
-### Phase 2: Interactive TUI Construction (Days 4–7)
+**Phase 3: V3 Implementation (Days 21+)**
+1.  Implement AniList OAuth2 device flow.
+2.  Build the `anime-hub update` command with SHA256 verification.
 
-* Define core state representations: `SearchState`, `ResultsState`, and `EpisodeState`.
-* Connect keybindings to handle lists, text input boxes, and options selectors.
-
-### Phase 3: Playback Integration & Core Loop (Days 8–10)
-
-* Implement execution calls passing stream URLs to the native playback application.
-* Inject state protection boundaries using the framework's runtime execution methods to isolate the parent terminal's graphical layout buffers.
-
-```go
-package main
-
-import (
-	"os/exec"
-	"github.com/charmbracelet/bubbletea"
-)
-
-type SessionState int
-const (
-	SearchState SessionState = iota
-	ResultsState
-	EpisodeSelectState
-)
-
-type Model struct {
-	state           SessionState
-	provider        AnimeProvider
-	selectedEpisode Episode
-	selectedLang    string
-}
-
-type playbackFinishedMsg struct{ err error }
-
-func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
-	case tea.KeyMsg:
-		if msg.String() == "enter" && m.state == EpisodeSelectState {
-			// Resolve URL immediately prior to invocation to avoid early token death
-			url, err := m.provider.GetStreamURL(m.selectedEpisode.ID, m.selectedLang)
-			if err != nil {
-				return m, func() tea.Msg { return playbackFinishedMsg{err: err} }
-			}
-
-			// --no-terminal isolates standard output descriptors from polluting terminal UI grids
-			cmd := exec.Command("mpv", "--no-terminal", url)
-
-			// Safely pause the TUI loop, pass control to mpv, and restore screen buffers on close
-			return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
-				return playbackFinishedMsg{err: err}
-			})
-		}
-	}
-	return m, nil
-}
-
+**Professional CI/CD Pipeline (GitHub Actions):**
+```yaml
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with: { go-version: '1.21', cache: true }
+      - uses: golangci/golangci-lint-action@v3
+      - run: go test -v -race ./...
 ```
 
-### Phase 4: Error Handling & Fallback Routine Hardening (Days 11–14)
-
-* Integrate error-catching mechanics inside the playback response channel (`playbackFinishedMsg`) to handle sudden execution errors.
-* Build automated lookup verification loops (`exec.LookPath`) to confirm that native platform player binaries are present before allowing execution streams.
+**AI IDE Workflow (Cursor/Windsurf):**
+Create a `.cursorrules` file in the root:
+> "You are an expert Go developer. Always use `golangci-lint` standards. Prefer composition over inheritance. Do not write raw HTML scrapers; use the defined Provider interfaces. Keep functions under 40 lines. Never use `panic()` in application logic."
