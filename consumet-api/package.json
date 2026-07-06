@@ -22,5 +22,10 @@
     "anime"
   ],
   "author": "Chethankumar443",
-  "license": "MIT"
+  "license": "MIT",
+  "pkg": {
+    "external": [
+      "node:sqlite"
+    ]
+  }
 }
