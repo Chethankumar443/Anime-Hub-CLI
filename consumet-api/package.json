@@ -1,0 +1,26 @@
+{
+  "name": "consumet-api",
+  "version": "1.0.0",
+  "description": "Consumet and AniList GraphQL Node.js API server for Anime-Hub-CLI",
+  "main": "index.js",
+  "bin": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "build": "pkg . --targets node18-win-x64,node18-macos-x64,node18-linux-x64 --out-path dist"
+  },
+  "dependencies": {
+    "@consumet/extensions": "^1.0.4",
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "pkg": "^5.8.1"
+  },
+  "keywords": [
+    "consumet",
+    "anilist",
+    "express",
+    "anime"
+  ],
+  "author": "Chethankumar443",
+  "license": "MIT"
+}
