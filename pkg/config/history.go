@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/yourorg/anime-cli/pkg/provider"
+	"animehub/pkg/provider"
 )
 
 type History struct {
