@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"os"
 
-	tea "github.com/charmbracelet/bubbletea"
 	"animehub/pkg/provider"
 	"animehub/pkg/tui"
+	tea "github.com/charmbracelet/bubbletea"
 )
 
 var (
@@ -28,7 +28,7 @@ func main() {
 	// 1. Initialize Consumet Manager (Embedded Node Binary)
 	// We use port 3000 as default
 	consumetManager := provider.NewConsumetManager("3000")
-	
+
 	// Try starting the manager, fallback gracefully if already running
 	if err := consumetManager.Start(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error starting Consumet: %v\n", err)

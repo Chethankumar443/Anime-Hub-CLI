@@ -12,7 +12,7 @@ import (
 )
 
 type History struct {
-	Watchlist []provider.Anime             `json:"watchlist"`
+	Watchlist []provider.Anime            `json:"watchlist"`
 	Progress  []provider.PlaybackProgress `json:"progress"`
 }
 

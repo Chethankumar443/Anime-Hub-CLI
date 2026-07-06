@@ -58,7 +58,7 @@ func renderKitty(imagePath string, cellWidth, cellHeight int) string {
 	}
 
 	b64Data := base64.StdEncoding.EncodeToString(data)
-	
+
 	// Kitty Graphics Protocol command format:
 	// \x1b_Gf=100,a=T,t=d,c=W,r=H;<base64>\x1b\\
 	// chunking into blocks of 4096 bytes
@@ -148,7 +148,7 @@ func renderFallbackPlaceholder(width, height int, text string) string {
 	border := "+" + strings.Repeat("-", width-2) + "+"
 	buf.WriteString(border)
 	buf.WriteString("\n")
-	
+
 	middleLineY := height / 2
 	for y := 1; y < height-1; y++ {
 		if y == middleLineY {

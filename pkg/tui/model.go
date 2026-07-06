@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"os/exec"
 
+	"animehub/pkg/provider"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"animehub/pkg/provider"
 )
 
 type SessionState int
@@ -22,6 +22,7 @@ const (
 type AnimeItem struct {
 	Anime provider.Anime
 }
+
 func (i AnimeItem) Title() string       { return i.Anime.Title }
 func (i AnimeItem) Description() string { return "ID: " + i.Anime.ID }
 func (i AnimeItem) FilterValue() string { return i.Anime.Title }
@@ -29,6 +30,7 @@ func (i AnimeItem) FilterValue() string { return i.Anime.Title }
 type EpisodeItem struct {
 	Episode provider.Episode
 }
+
 func (i EpisodeItem) Title() string       { return fmt.Sprintf("Episode %d", i.Episode.Number) }
 func (i EpisodeItem) Description() string { return "ID: " + i.Episode.ID }
 func (i EpisodeItem) FilterValue() string { return fmt.Sprintf("Episode %d", i.Episode.Number) }
@@ -52,8 +54,8 @@ type Model struct {
 	selectedEpisode provider.Episode
 	selectedLang    string
 
-	searchInput textinput.Model
-	resultsList list.Model
+	searchInput  textinput.Model
+	resultsList  list.Model
 	episodesList list.Model
 
 	loading bool
@@ -141,7 +143,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if msg.String() == "enter" {
 				if item, ok := m.episodesList.SelectedItem().(EpisodeItem); ok {
 					m.selectedEpisode = item.Episode
-					
+
 					url, err := m.provider.GetStreamURL(m.selectedEpisode.ID, m.selectedLang)
 					if err != nil {
 						m.err = err
@@ -219,7 +221,7 @@ func (m Model) View() string {
 	case EpisodeSelectState:
 		return lipgloss.NewStyle().Margin(1, 2).Render(m.episodesList.View())
 	}
-	
+
 	return ""
 }
 

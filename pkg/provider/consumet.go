@@ -26,7 +26,7 @@ func NewConsumetManager(port string) *ConsumetManager {
 	if err != nil {
 		home = "."
 	}
-	
+
 	// E.g., ~/.config/animehub/consumet.exe
 	binaryName := "consumet"
 	if runtime.GOOS == "windows" {
@@ -98,7 +98,7 @@ func (cm *ConsumetManager) Stop() {
 
 // ConsumetProvider implements the AnimeProvider interface for Consumet API
 type ConsumetProvider struct {
-	client *resty.Client
+	client  *resty.Client
 	baseURL string
 }
 
@@ -208,7 +208,7 @@ func (p *ConsumetProvider) GetStreamURL(episodeID, lang string) (string, error) 
 			return src.URL, nil
 		}
 	}
-	
+
 	if len(result.Sources) > 0 {
 		return result.Sources[0].URL, nil
 	}

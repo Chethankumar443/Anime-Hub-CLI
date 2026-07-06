@@ -20,13 +20,13 @@ func GetCacheDir() string {
 	if err != nil {
 		homeDir = "."
 	}
-	
+
 	if os.Getenv("APPDATA") != "" { // Windows
 		baseDir = filepath.Join(os.Getenv("LOCALAPPDATA"), "anime-cli-cache")
 	} else { // Unix/macOS
 		baseDir = filepath.Join(homeDir, ".cache", "anime-cli")
 	}
-	
+
 	imagesDir := filepath.Join(baseDir, "images")
 	_ = os.MkdirAll(imagesDir, 0755)
 	return imagesDir
@@ -46,7 +46,7 @@ func DownloadImage(ctx context.Context, url string) (string, error) {
 	}
 
 	destPath := GetCachePathForURL(url)
-	
+
 	// Check if already cached
 	if info, err := os.Stat(destPath); err == nil && info.Size() > 0 {
 		// Update modification time for LRU eviction tracker
@@ -84,9 +84,9 @@ func DownloadImage(ctx context.Context, url string) (string, error) {
 	if _, err := io.Copy(tmpFile, resp.Body); err != nil {
 		return "", err
 	}
-	
+
 	tmpFile.Close()
-	
+
 	// Evict older cache elements if directories exceed 250MB limit
 	const maxCacheBytes = 250 * 1024 * 1024 // 250MB
 	_ = EvictCache(GetCacheDir(), maxCacheBytes)
@@ -110,7 +110,7 @@ type DownloadProgress struct {
 
 func DownloadVideoFile(ctx context.Context, url string, destPath string, progress chan<- DownloadProgress) {
 	defer close(progress)
-	
+
 	isMockURL := strings.Contains(url, "commondatastorage.googleapis.com")
 
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
@@ -234,7 +234,7 @@ func runMockDownloadSimulation(ctx context.Context, destPath string, progress ch
 
 	totalSize := int64(10 * 1024 * 1024) // 10MB
 	downloaded := int64(0)
-	chunkSize := int64(512 * 1024)      // 512KB per tick
+	chunkSize := int64(512 * 1024) // 512KB per tick
 	dummyData := make([]byte, chunkSize)
 
 	ticker := time.NewTicker(100 * time.Millisecond)

@@ -29,19 +29,18 @@ func TestLoadSaveConfigRecovery(t *testing.T) {
 	}
 	defer os.RemoveAll(tmpDir)
 
-
 	// We patch it temporarily by writing a helper or just testing saveConfigLocked
 	cfg := DefaultConfig()
 	cfg.Theme = "custom-test-theme"
 	cfg.BufferSizeMB = 128
 
 	path := filepath.Join(tmpDir, "config.json")
-	
+
 	// Test saveConfigLocked directly
 	err = saveConfigLocked(cfg)
 	// Wait, saveConfigLocked writes to GetConfigPath(). Since GetConfigPath() points to the real config,
 	// let's write a file write and decode test directly.
-	
+
 	// Let's test the JSON serialization directly to be environment-independent
 	tmpFile, err := os.Create(path)
 	if err != nil {
@@ -56,7 +55,7 @@ func TestLoadSaveConfigRecovery(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to create tmp: %v", err)
 	}
-	
+
 	err = jsonEncodeDecode(file, cfg)
 	file.Close()
 	if err != nil {
