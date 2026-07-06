@@ -1,7 +1,7 @@
 *This document is designed to be fed into an AI IDE (Cursor, Windsurf, Aider) as context, or used by a human developer to onboard. It is structured to be reusable by swapping the `[Bracketed]` context for future projects.*
 
 **1. Core Engineering Skills (The "How to Build" Matrix)**
-*   **Language Mastery:** [Go 1.21+]. Focus on interfaces, concurrency (goroutines/channels), and error handling. *Rule: Never use `panic()` in application logic; always return errors.*
+*   **Language Mastery:** [Go 1.26.4]. Focus on interfaces, concurrency (goroutines/channels), and error handling. *Rule: Never use `panic()` in application logic; always return errors.*
 *   **UI Paradigm:** [Terminal User Interface (TUI)]. Framework: [Bubbletea]. *Rule: All UI state must be immutable updates. Never mutate the model directly in the View function.*
 *   **External Execution:** [Process Management]. *Rule: When spawning external binaries (like `mpv`), always capture stderr and handle non-zero exit codes gracefully.*
 

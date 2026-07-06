@@ -11,6 +11,8 @@ import (
 	"github.com/charmbracelet/lipgloss"
 )
 
+var PlayerPath = "mpv"
+
 type SessionState int
 
 const (
@@ -151,7 +153,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					}
 
 					// --no-terminal isolates standard output descriptors from polluting terminal UI grids
-					cmd := exec.Command("mpv", "--no-terminal", url)
+					cmd := exec.Command(PlayerPath, "--no-terminal", url)
 
 					// Safely pause the TUI loop, pass control to mpv, and restore screen buffers on close
 					return m, tea.ExecProcess(cmd, func(err error) tea.Msg {
