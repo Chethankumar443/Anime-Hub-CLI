@@ -3,6 +3,7 @@ package tui
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"animehub/pkg/provider"
 	"github.com/charmbracelet/bubbles/list"
@@ -12,6 +13,21 @@ import (
 )
 
 var PlayerPath = "mpv"
+
+const asciiLogo = `   █████████               ███                              █████   █████            █████       
+  ███▒▒▒▒▒███             ▒▒▒                              ▒▒███   ▒▒███            ▒▒███        
+ ▒███    ▒███  ████████   ████  █████████████    ██████     ▒███    ▒███  █████ ████ ▒███████    
+ ▒███████████ ▒▒███▒▒███ ▒▒███ ▒▒███▒▒███▒▒███  ███▒▒███    ▒███████████ ▒▒███ ▒███  ▒███▒▒███   
+ ▒███▒▒▒▒▒███  ▒███ ▒███  ▒███  ▒███ ▒███ ▒███ ▒███████     ▒███▒▒▒▒▒███  ▒███ ▒███  ▒███ ▒███   
+ ▒███    ▒███  ▒███ ▒███  ▒███  ▒███ ▒███ ▒███ ▒███▒▒▒      ▒███    ▒███  ▒███ ▒███  ▒███ ▒███   
+ █████   █████ ████ █████ █████ █████▒███ █████▒▒██████     █████   █████ ▒▒████████ ████████    
+▒▒▒▒▒   ▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒▒ ▒▒▒▒▒ ▒▒▒▒▒ ▒▒▒ ▒▒▒▒▒  ▒▒▒▒▒▒     ▒▒▒▒▒   ▒▒▒▒▒   ▒▒▒▒▒▒▒▒ ▒▒▒▒▒▒▒▒`
+
+const smallLogo = `   __ _  _ _  _ _ _  ____   _  _  _ _  ___ 
+  / _ \| | | || | | |/ ___) | || |/ | |/ _ \
+ |  __/| | | || | | |  ___| | || |\_/| |  __/
+  \___)|_|_|_||_|_|_|\____) |_||_||__|_|\___)
+             A N I M E   H U B`
 
 type SessionState int
 
@@ -62,6 +78,9 @@ type Model struct {
 
 	loading bool
 	err     error
+
+	terminalWidth  int
+	terminalHeight int
 }
 
 func NewMainModel(prov provider.AnimeProvider) Model {
@@ -99,8 +118,10 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	switch msg := msg.(type) {
 	case tea.WindowSizeMsg:
-		m.resultsList.SetSize(msg.Width, msg.Height-4)
-		m.episodesList.SetSize(msg.Width, msg.Height-4)
+		m.terminalWidth = msg.Width
+		m.terminalHeight = msg.Height
+		m.resultsList.SetSize(msg.Width-4, msg.Height-12)
+		m.episodesList.SetSize(msg.Width-4, msg.Height-12)
 		return m, nil
 
 	case tea.KeyMsg:
@@ -203,25 +224,64 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, tea.Batch(cmds...)
 }
 
+func (m Model) getLogo() string {
+	logoStyle := lipgloss.NewStyle().
+		Foreground(lipgloss.Color("39")). // Cyan / blue accent
+		Bold(true)
+
+	if m.terminalWidth >= 100 {
+		return logoStyle.Render(asciiLogo)
+	} else if m.terminalWidth >= 48 {
+		return logoStyle.Render(smallLogo)
+	}
+	return logoStyle.Render("=== ANIME HUB ===")
+}
+
+func (m Model) renderWithHeader(content string) string {
+	logo := m.getLogo()
+
+	if m.terminalWidth == 0 {
+		return fmt.Sprintf("%s\n\n%s", logo, content)
+	}
+
+	// Center the logo lines
+	var logoLines []string
+	for _, line := range strings.Split(logo, "\n") {
+		logoLines = append(logoLines, lipgloss.PlaceHorizontal(m.terminalWidth, lipgloss.Center, line))
+	}
+	centeredLogo := strings.Join(logoLines, "\n")
+
+	// Center the content lines
+	var contentLines []string
+	for _, line := range strings.Split(content, "\n") {
+		contentLines = append(contentLines, lipgloss.PlaceHorizontal(m.terminalWidth, lipgloss.Center, line))
+	}
+	centeredContent := strings.Join(contentLines, "\n")
+
+	return fmt.Sprintf("%s\n\n%s", centeredLogo, centeredContent)
+}
+
 func (m Model) View() string {
 	if m.err != nil {
-		return fmt.Sprintf("Error: %v\n\nPress esc to go back or ctrl+c to quit.", m.err)
+		errorContent := fmt.Sprintf("Error: %v\n\nPress esc to go back or ctrl+c to quit.", m.err)
+		return m.renderWithHeader(errorContent)
 	}
 
 	if m.loading {
-		return "Loading..."
+		return m.renderWithHeader("Loading...")
 	}
 
 	switch m.state {
 	case SearchState:
-		return fmt.Sprintf(
+		searchContent := fmt.Sprintf(
 			"Welcome to AnimeHub\n\n%s\n\n(Press Enter to search, ctrl+c to quit)",
 			m.searchInput.View(),
 		)
+		return m.renderWithHeader(searchContent)
 	case ResultsState:
-		return lipgloss.NewStyle().Margin(1, 2).Render(m.resultsList.View())
+		return m.renderWithHeader(m.resultsList.View())
 	case EpisodeSelectState:
-		return lipgloss.NewStyle().Margin(1, 2).Render(m.episodesList.View())
+		return m.renderWithHeader(m.episodesList.View())
 	}
 
 	return ""
