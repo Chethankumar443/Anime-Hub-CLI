@@ -1,10 +1,12 @@
 package tui
 
 import (
+	"context"
 	"fmt"
 	"os/exec"
 	"strings"
 
+	"animehub/pkg/cache"
 	"animehub/pkg/provider"
 	"github.com/charmbracelet/bubbles/list"
 	"github.com/charmbracelet/bubbles/textinput"
@@ -19,7 +21,7 @@ const asciiLogo = `   █████████               ███       
  ▒███    ▒███  ████████   ████  █████████████    ██████     ▒███    ▒███  █████ ████ ▒███████    
  ▒███████████ ▒▒███▒▒███ ▒▒███ ▒▒███▒▒███▒▒███  ███▒▒███    ▒███████████ ▒▒███ ▒███  ▒███▒▒███   
  ▒███▒▒▒▒▒███  ▒███ ▒███  ▒███  ▒███ ▒███ ▒███ ▒███████     ▒███▒▒▒▒▒███  ▒███ ▒███  ▒███ ▒███   
- ▒███    ▒███  ▒███ ▒███  ▒███  ▒███ ▒███ ▒███ ▒███▒▒▒      ▒███    ▒███  ▒███ ▒███  ▒███ ▒███   
+ ▒███    ▒███  ▒███ ▒███  ▒███  ▒███ ▒███ ▒███ ▒███▒▒▒      ▒███    ▒███  █████ ▒███  ▒███ ▒███   
  █████   █████ ████ █████ █████ █████▒███ █████▒▒██████     █████   █████ ▒▒████████ ████████    
 ▒▒▒▒▒   ▒▒▒▒▒ ▒▒▒▒ ▒▒▒▒▒ ▒▒▒▒▒ ▒▒▒▒▒ ▒▒▒ ▒▒▒▒▒  ▒▒▒▒▒▒     ▒▒▒▒▒   ▒▒▒▒▒   ▒▒▒▒▒▒▒▒ ▒▒▒▒▒▒▒▒`
 
@@ -65,6 +67,11 @@ type episodesResultMsg struct {
 	err      error
 }
 
+type coverDownloadedMsg struct {
+	path string
+	err  error
+}
+
 type Model struct {
 	state           SessionState
 	provider        provider.AnimeProvider
@@ -81,6 +88,7 @@ type Model struct {
 
 	terminalWidth  int
 	terminalHeight int
+	coverPath      string
 }
 
 func NewMainModel(prov provider.AnimeProvider) Model {
@@ -120,8 +128,13 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.WindowSizeMsg:
 		m.terminalWidth = msg.Width
 		m.terminalHeight = msg.Height
-		m.resultsList.SetSize(msg.Width-4, msg.Height-12)
-		m.episodesList.SetSize(msg.Width-4, msg.Height-12)
+		if m.coverPath != "" && msg.Width >= 80 {
+			m.resultsList.SetSize(msg.Width-30, msg.Height-12)
+			m.episodesList.SetSize(msg.Width-30, msg.Height-12)
+		} else {
+			m.resultsList.SetSize(msg.Width-4, msg.Height-12)
+			m.episodesList.SetSize(msg.Width-4, msg.Height-12)
+		}
 		return m, nil
 
 	case tea.KeyMsg:
@@ -140,6 +153,7 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if query != "" {
 					m.loading = true
 					m.err = nil
+					m.coverPath = ""
 					cmds = append(cmds, m.searchAnime(query))
 				}
 			} else {
@@ -156,10 +170,20 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					cmds = append(cmds, m.getEpisodes(item.Anime.ID))
 				}
 			} else if msg.String() == "esc" {
+				m.coverPath = ""
 				m.state = SearchState
 			} else {
 				m.resultsList, cmd = m.resultsList.Update(msg)
 				cmds = append(cmds, cmd)
+
+				// Fetch the new selected anime's cover art in the background!
+				if item, ok := m.resultsList.SelectedItem().(AnimeItem); ok {
+					m.coverPath = "" // clear current cover
+					m.resultsList.SetSize(m.terminalWidth-4, m.terminalHeight-12)
+					if item.Anime.Image != "" {
+						cmds = append(cmds, m.downloadCoverImage(item.Anime.Image))
+					}
+				}
 			}
 
 		case EpisodeSelectState:
@@ -182,7 +206,14 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					})
 				}
 			} else if msg.String() == "esc" {
+				m.coverPath = ""
 				m.state = ResultsState
+				// Trigger cover art download for the currently selected item in search results list
+				if item, ok := m.resultsList.SelectedItem().(AnimeItem); ok {
+					if item.Anime.Image != "" {
+						cmds = append(cmds, m.downloadCoverImage(item.Anime.Image))
+					}
+				}
 			} else {
 				m.episodesList, cmd = m.episodesList.Update(msg)
 				cmds = append(cmds, cmd)
@@ -200,6 +231,11 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.resultsList.SetItems(items)
 			m.state = ResultsState
+
+			// Proactively trigger cover art download for the first item in the list!
+			if len(msg.results) > 0 && msg.results[0].Image != "" {
+				cmds = append(cmds, m.downloadCoverImage(msg.results[0].Image))
+			}
 		}
 
 	case episodesResultMsg:
@@ -213,6 +249,25 @@ func (m Model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			m.episodesList.SetItems(items)
 			m.state = EpisodeSelectState
+
+			// Download cover art of the selected anime
+			if m.selectedAnime.Image != "" {
+				cmds = append(cmds, m.downloadCoverImage(m.selectedAnime.Image))
+			}
+		}
+
+	case coverDownloadedMsg:
+		if msg.err == nil {
+			m.coverPath = msg.path
+			// Update list sizes to fit side-by-side!
+			if m.terminalWidth >= 80 {
+				m.resultsList.SetSize(m.terminalWidth-30, m.terminalHeight-12)
+				m.episodesList.SetSize(m.terminalWidth-30, m.terminalHeight-12)
+			}
+		} else {
+			m.coverPath = ""
+			m.resultsList.SetSize(m.terminalWidth-4, m.terminalHeight-12)
+			m.episodesList.SetSize(m.terminalWidth-4, m.terminalHeight-12)
 		}
 
 	case playbackFinishedMsg:
@@ -279,9 +334,21 @@ func (m Model) View() string {
 		)
 		return m.renderWithHeader(searchContent)
 	case ResultsState:
-		return m.renderWithHeader(m.resultsList.View())
+		listView := m.resultsList.View()
+		if m.terminalWidth >= 80 && m.coverPath != "" {
+			imgView := cache.RenderImage(m.coverPath, 24, 12)
+			joined := lipgloss.JoinHorizontal(lipgloss.Top, imgView, "  ", listView)
+			return m.renderWithHeader(joined)
+		}
+		return m.renderWithHeader(listView)
 	case EpisodeSelectState:
-		return m.renderWithHeader(m.episodesList.View())
+		listView := m.episodesList.View()
+		if m.terminalWidth >= 80 && m.coverPath != "" {
+			imgView := cache.RenderImage(m.coverPath, 24, 12)
+			joined := lipgloss.JoinHorizontal(lipgloss.Top, imgView, "  ", listView)
+			return m.renderWithHeader(joined)
+		}
+		return m.renderWithHeader(listView)
 	}
 
 	return ""
@@ -298,5 +365,12 @@ func (m Model) getEpisodes(animeID string) tea.Cmd {
 	return func() tea.Msg {
 		episodes, err := m.provider.GetEpisodes(animeID)
 		return episodesResultMsg{episodes: episodes, err: err}
+	}
+}
+
+func (m Model) downloadCoverImage(url string) tea.Cmd {
+	return func() tea.Msg {
+		path, err := cache.DownloadImage(context.Background(), url)
+		return coverDownloadedMsg{path: path, err: err}
 	}
 }

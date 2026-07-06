@@ -244,6 +244,7 @@ func (p *ConsumetProvider) Search(query string) ([]Anime, error) {
 		Results []struct {
 			ID    string `json:"id"`
 			Title string `json:"title"`
+			Image string `json:"image"`
 		} `json:"results"`
 	}
 
@@ -256,6 +257,7 @@ func (p *ConsumetProvider) Search(query string) ([]Anime, error) {
 		animes = append(animes, Anime{
 			ID:    r.ID,
 			Title: r.Title,
+			Image: r.Image,
 		})
 	}
 

@@ -9,6 +9,7 @@ import (
 type Anime struct {
 	ID    string
 	Title string
+	Image string
 }
 
 type Episode struct {
